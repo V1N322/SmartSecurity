@@ -14,6 +14,10 @@ class Button:
                 return self.next_menu
         return None
 
+class Label:
+    def __init__(self, text):
+        self.text = text
+
 class Menu:
     def __init__(self, buttons):
         self.buttons = buttons
@@ -24,46 +28,25 @@ class Menu:
             self.selected_button = (self.selected_button - 1) % len(self.buttons)
         elif key == curses.KEY_DOWN:
             self.selected_button = (self.selected_button + 1) % len(self.buttons)
-        return self.buttons[self.selected_button].handle_input(key)
+
+        button = self.buttons[self.selected_button]
+        if isinstance(button, Button):
+            return button.handle_input(key)
 
     def display(self, stdscr):
         stdscr.clear()
+        max_y, max_x = stdscr.getmaxyx()
+        menu_height = len(self.buttons)
+
+        # Calculate the starting y coordinate for displaying the menu in the center
+        start_y = max_y // 2 - menu_height // 2
+
         for i, button in enumerate(self.buttons):
             if i == self.selected_button:
-                stdscr.addstr(f'> {button.text}\n')
+                stdscr.addstr(start_y + i, max_x // 2 - len(button.text) // 2, "> " + button.text + "")
             else:
-                stdscr.addstr(f'  {button.text}\n')
+                stdscr.addstr(start_y + i, max_x // 2 - len(button.text) // 2, button.text)
+
         stdscr.refresh()
 
-def start():
-    print("Function 'start' is running.")
 
-def main(stdscr):
-    curses.curs_set(0)
-    stdscr.nodelay(1)
-
-    # Создаем кнопки
-    button_start = Button("Запустить", action=start)
-    button_model = Button("Установить модель", next_menu=None)
-    button_support = Button("Поддержка", next_menu=None)
-
-    # Создаем меню
-    menu_main = Menu([button_start, button_model, button_support])
-    menu_model = Menu([Button("Назад", next_menu=menu_main)])
-    menu_support = Menu([Button("GitHub: ", next_menu=menu_main), Button("Назад", next_menu=menu_main)])
-
-    # Устанавливаем следующие меню
-    button_model.next_menu = menu_model
-    button_support.next_menu = menu_support
-
-    current_menu = menu_main
-
-    while True:
-        current_menu.display(stdscr)
-        key = stdscr.getch()
-        next_menu = current_menu.handle_input(key)
-        if next_menu:
-            current_menu = next_menu
-
-if __name__ == '__main__':
-    curses.wrapper(main)
